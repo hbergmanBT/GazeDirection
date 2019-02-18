@@ -4,7 +4,7 @@ import cv2
 import os
 from numpy import *
 
-classifiers_dir = '/usr/local/lib/python3.6/dist-packages/cv2/data/'
+classifiers_dir = './classifiers/'
 face_classifier_file = 'haarcascade_frontalface_default.xml'
 eye_classifier_file = 'haarcascade_eye.xml'
 
@@ -55,13 +55,13 @@ while(True):
     # Capture frame-by-frame
     ret, frame = cap.read()
     frame = cv2.resize(frame, (400,300))
-    frame = cv2.flip(frame, 1)
 
     # Our operations on the frame come here
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
     # Display the resulting frame
     faces = face_cascade.detectMultiScale(gray, 1.3, 5)
+    print(len(faces))
     for (x,y,w,h) in faces:
         face = Face(x, y, w, h)
         frame = cv2.rectangle(frame,(x,y), (x+w,y+h), (255,0,0),2)
@@ -73,8 +73,8 @@ while(True):
             color = (0, 255, 0)
             if eye.isValid(face):
                 cv2.rectangle(roi_color,(ex,ey), (ex+ew,ey+eh), color,2)
+    cv2.imshow('frame',frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        cv2.imshow('frame',frame)
         break
 
 # When everything done, release the capture
