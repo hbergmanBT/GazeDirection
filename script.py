@@ -162,12 +162,6 @@ while(keepLoop):
         roi_color = frame[y:y+h,x:x+w]
         eyes = eye_cascade.detectMultiScale(roi_gray)
 
-        #for (ex, ey, ew, eh) in eyes:
-        #    eye = Eye(ex, ey, ew, eh)
-        #    color = (0, 255, 0)
-        #    cv2.rectangle(roi_color,(ex,ey), (ex+ew,ey+eh), color,2)
-        #    # cv2.imshow('roi',roi_color[ey:ey+eh,ex:ex+ew])
-
         if(0 < len(eyes)):
             (left_eye, right_eye) = face.selectEyes([Eye(ex, ey, ew, eh) for (ex, ey, ew, eh) in eyes])
             cv2.rectangle(roi_color, left_eye.getTopLeft(), left_eye.getBotRight(), (0, 255, 255), 2)
