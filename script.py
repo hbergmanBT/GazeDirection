@@ -24,7 +24,7 @@ class Calibrator(object):
 
     def reset(self):
         self.state = 0;
-        self.moments = [None] * Calibrator.directions_nb;
+        self.vectorized_double_moments = [None] * Calibrator.directions_nb;
 
     def isWaitingForEntry(self):
         return self.state < Calibrator.directions_nb;
@@ -39,24 +39,33 @@ class Calibrator(object):
         res = [float(v) for v in moment.values()];
         return array(res);
 
-    def addEntry(self, moment):
+    def vectorOfDoubleMoment(self, moment_left, moment_right):
+        return concatenate((self.vectorOfMoment(moment_left), self.vectorOfMoment(moment_right)))
+
+    def addDoubleEntry(self, moment_left, moment_right):
         if(self.isWaitingForEntry()):
-            self.moments[self.state] = self.vectorOfMoment(moment);
+            self.vectorized_double_moments[self.state] = self.vectorOfDoubleMoment(moment_left, moment_right)
             self.state += 1;
 
-    def getResult(self, moment):
+    def getDoubleScores(self, moment_left, moment_right):
         if(self.isWaitingForEntry()):
-            return 'Calibration is not done yet';
+            return []
         else:
-            best_direction = 'Nowhere';
-            best_score = float('inf');
-            vectorized_moment = self.vectorOfMoment(moment);
-            for (current_direction, current_vector) in zip(Calibrator.directions, self.moments):
-                current_score = sum(power(vectorized_moment - current_vector, 2));
+            vectorized_double_moment = self.vectorOfDoubleMoment(moment_left, moment_right)
+            return [(d, float(sum(power(vectorized_double_moment - v, 2)))) for (d, v) in zip(Calibrator.directions, self.vectorized_double_moments)]
+
+    def getDoubleResult(self, moment_left, moment_right):
+        if(self.isWaitingForEntry()):
+            return 'Calibration is not done yet'
+        else:
+            best_direction = 'Nowhere'
+            best_score = float('inf')
+            vectorized_double_moment = self.vectorOfDoubleMoment(moment_left, moment_right)
+            for(current_direction, current_score) in zip(Calibrator.directions, self.getDoubleScores(moment_left, moment_right)):
                 if(current_score < best_score):
-                    best_score = current_score;
-                    best_direction = current_direction;
-            return best_direction;
+                    best_score = current_score
+                    best_direction = current_direction
+            return best_direction
 
 class Face(object):
     def __init__(self, x, y, w, h):
@@ -116,6 +125,19 @@ class Eye(object):
     def getBotRight(self):
         return (self.x + self.w, self.y + self.h)
 
+def printCalibratorInfos(frame, calibrator, m_left, m_right):
+    frame_h, frame_w = frame.shape[0], frame.shape[1]
+    cv2.putText(frame, calibrator.getInstruction(), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+    #cv2.putText(frame, calibrator.getDoubleResult(m_left, m_right), (50, 550), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+    pos = frame_h - 15
+    scores = calibrator.getDoubleScores(m_left, m_right)
+    score_total = float(sum([s for (_, s) in scores]))
+    for (d, s) in scores:
+        cv2.putText(frame, d, (10, pos), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
+        x_end = int(100 + 600. * s / score_total)
+        cv2.rectangle(frame, (100, pos), (x_end, pos), (0, 255, 255), 2)
+        pos -= 40
+
 
 
 cap = cv2.VideoCapture(0)
@@ -151,13 +173,13 @@ while(keepLoop):
             cv2.rectangle(roi_color, left_eye.getTopLeft(), left_eye.getBotRight(), (0, 255, 255), 2)
             cv2.rectangle(roi_color, right_eye.getTopLeft(), right_eye.getBotRight(), (0, 0, 255), 2)
 
-            m = cv2.moments(roi_gray[left_eye.getTop():left_eye.getBot(), left_eye.getLeft():left_eye.getRight()])
-            cv2.putText(frame, calibrator.getInstruction(), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-            cv2.putText(frame, calibrator.getResult(m), (50, 550), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
+            m_left = cv2.moments(roi_gray[left_eye.getTop():left_eye.getBot(), left_eye.getLeft():left_eye.getRight()])
+            m_right = cv2.moments(roi_gray[right_eye.getTop():right_eye.getBot(), right_eye.getLeft():right_eye.getRight()])
+            
+            printCalibratorInfos(frame, calibrator, m_left, m_right)
 
-            #cv2.imshow('left', roi_color[left_eye.getTop():left_eye.getBot(), left_eye.getLeft():left_eye.getRight()])
             if cv2.waitKey(1) & 0xFF == ord('v'):
-                calibrator.addEntry(m);
+                calibrator.addDoubleEntry(m_left, m_right);
             if cv2.waitKey(1) & 0xFF == ord('r'):
                 calibrator.reset();
 
