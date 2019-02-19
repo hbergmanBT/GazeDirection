@@ -36,7 +36,30 @@ class Calibrator(object):
             return 'Have fun';
 
     def vectorOfMoment(self, moment):
-        res = [float(v) for v in moment.values()];
+        """
+        Evaluates the 7 moment invariants defined by Hu
+        Returns them ordered in an array
+        """
+        mu = {}
+        for key, value in moment.items():
+            if 'mu' in key:
+                mu[key.replace('mu','')] = value
+        HMI1 = mu['02']*mu['20']
+        HMI2 = (mu['02']-mu['20'])**2 + 4*mu['11']
+        HMI3 = (mu['30']-3*mu['12'])**2 + (+3*mu['21']-mu['03'])**2
+        HMI4 = (mu['30']+mu['12'])**2 + (mu['21']+mu['03'])**2
+        HMI5 = (mu['30']-3*mu['12'])*(mu['30']+mu['12'])\
+                *((mu['30']+mu['12'])**2-3*(mu['21']+mu['03'])**2)\
+                +(3*mu['21']-mu['03'])*(mu['03']+mu['21'])\
+                *(3*(mu['12']+mu['30'])**2-(mu['03']+mu['21'])**2)
+        HMI6 = (mu['02']-mu['20'])*((mu['30']+mu['12'])**2-(mu['21']+mu['03'])**2)\
+                +4*(mu['30']+mu['12'])*(mu['21']+mu['03'])
+        HMI7 = (3*mu['21']-mu['03'])*(mu['30']+mu['12'])\
+                *((mu['30']+mu['12'])**2-3*(mu['21']+mu['03'])**2)\
+                -(mu['21']+mu['03'])*(mu['30']-3*mu['12'])\
+                *(3*(mu['30']+mu['12'])**2-(mu['21']+mu['03'])**2)
+        res = [HMI1, HMI2, HMI3, HMI4, HMI5, HMI6, HMI7]
+        print(res)
         return array(res);
 
     def vectorOfDoubleMoment(self, moment_left, moment_right):
@@ -115,7 +138,7 @@ class Eye(object):
 
     def getTop(self):
         return self.y;
-    
+
     def getBot(self):
         return self.y + self.h;
 
