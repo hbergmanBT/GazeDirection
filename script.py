@@ -27,7 +27,7 @@ def printCalibratorInfos(frame, calibrator, m_left, m_right):
     #cv2.putText(frame, calibrator.getResult(m_left, m_right), (50, 550), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
     pos = frame_h - 15
     scores = calibrator.getScores(m_left, m_right)
-    score_total = float(sum([s for (_, s) in scores])) +1
+    score_total = float(sum([s for (_, s) in scores])) + 1
     for (d, s) in scores:
         cv2.putText(frame, d, (10, pos), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
         x_end = int(100 + 600. * s / score_total)
@@ -71,18 +71,9 @@ while(keepLoop):
             if pressed_key & 0xFF == ord('r'):
                 calibrator.reset();
 
-            if pressed_key & 0xFF == ord('e'):
-                calibrator.addXYData(m_left, 0)
-            if pressed_key & 0xFF == ord('s'):
-                calibrator.addXYData(m_left, 2)
-            if pressed_key & 0xFF == ord('f'):
-                calibrator.addXYData(m_left, 3)
-            if pressed_key & 0xFF == ord('d'):
-                calibrator.addXYData(m_left, 4)
-            if pressed_key & 0xFF == ord('c'):
                 calibrator.addXYData(m_left, 1)
             if pressed_key & 0xFF == ord('z'):
-                calibrator.showXYData()
+                calibrator.showVectorizedMoments()
 
 
     cv2.imshow('frame',frame)
