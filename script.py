@@ -27,7 +27,7 @@ def printCalibratorInfos(frame, calibrator, m_left, m_right):
     #cv2.putText(frame, calibrator.getResult(m_left, m_right), (50, 550), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
     pos = frame_h - 15
     scores = calibrator.getScores(m_left, m_right)
-    score_total = float(sum([s for (_, s) in scores]))
+    score_total = float(sum([s for (_, s) in scores])) +1
     for (d, s) in scores:
         cv2.putText(frame, d, (10, pos), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
         x_end = int(100 + 600. * s / score_total)
@@ -41,6 +41,7 @@ calibrator = Calibrator()
 
 keepLoop = True;
 while(keepLoop):
+    pressed_key = cv2.waitKey(1)
     # Capture frame-by-frame
     ret, frame = cap.read()
     frame = cv2.resize(frame, (640,480))
@@ -85,7 +86,6 @@ while(keepLoop):
 
 
     cv2.imshow('frame',frame)
-    pressed_key = cv2.waitKey(1)
     if pressed_key & 0xFF == ord('q'):
         keepLoop = False
 
