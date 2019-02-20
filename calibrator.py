@@ -61,14 +61,16 @@ class Calibrator(object):
         y_data = arange(Calibrator.nb_directions * Calibrator.nb_samples) % Calibrator.nb_directions
         for x_data in [x_data_left, x_data_right]:
             x_data = (x_data - mean(x_data, 0)) / std(x_data, 0)
+            plt.figure()
             for i in range(0, 7):
                 for j in range(i + 1, 7):
                     plt.subplot(6, 6, 1 + i + 6 * (j-1))
-                    plt.scatter(x_data[argwhere(y_data==0),i], x_data[argwhere(y_data==0),j], c='r')
-                    plt.scatter(x_data[argwhere(y_data==1),i], x_data[argwhere(y_data==1),j], c='b')
-                    plt.scatter(x_data[argwhere(y_data==2),i], x_data[argwhere(y_data==2),j], c='g')
-                    plt.scatter(x_data[argwhere(y_data==3),i], x_data[argwhere(y_data==3),j], c='y')
-                    plt.scatter(x_data[argwhere(y_data==4),i], x_data[argwhere(y_data==4),j], c='k')
+                    plt.scatter(x_data[argwhere(y_data==0),i], x_data[argwhere(y_data==0),j], c='r', label="TOP")
+                    plt.scatter(x_data[argwhere(y_data==1),i], x_data[argwhere(y_data==1),j], c='b', label="DOWN")
+                    plt.scatter(x_data[argwhere(y_data==2),i], x_data[argwhere(y_data==2),j], c='g', label="LEFT")
+                    plt.scatter(x_data[argwhere(y_data==3),i], x_data[argwhere(y_data==3),j], c='y', label="RIGHT")
+                    plt.scatter(x_data[argwhere(y_data==4),i], x_data[argwhere(y_data==4),j], c='k', label="CENTER")
+            plt.figlegend(labels = Calibrator.directions,loc="upper right")
             plt.show()
 
     def addEntry(self, moment_left, moment_right):

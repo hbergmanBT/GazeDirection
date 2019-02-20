@@ -71,7 +71,6 @@ while(keepLoop):
             if pressed_key & 0xFF == ord('r'):
                 calibrator.reset();
 
-                calibrator.addXYData(m_left, 1)
             if pressed_key & 0xFF == ord('z'):
                 calibrator.showVectorizedMoments()
 
