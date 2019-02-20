@@ -5,6 +5,7 @@ import os
 import matplotlib.pyplot as plt
 from numpy import *
 from calibrator import Calibrator
+from image import Image
 from face import Face
 from eye import Eye
 
@@ -42,23 +43,20 @@ keepLoop = True;
 while(keepLoop):
     # Capture frame-by-frame
     ret, frame = cap.read()
-    frame = cv2.resize(frame, (800,600))
+    frame = cv2.resize(frame, (640,480))
     frame = cv2.flip(frame, 1)
 
-    # Our operations on the frame come here
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Display the resulting frame
-    faces = face_cascade.detectMultiScale(gray, 1.3, 5)
-    for (x,y,w,h) in faces:
-        face = Face(x, y, w, h)
-        frame = cv2.rectangle(frame,(x,y), (x+w,y+h), (255,0,0),2)
-        roi_gray = gray[y:y+h,x:x+w]
-        roi_color = frame[y:y+h,x:x+w]
-        eyes = eye_cascade.detectMultiScale(roi_gray)
-
-        if(0 < len(eyes)):
-            (left_eye, right_eye) = face.selectEyes([Eye(ex, ey, ew, eh) for (ex, ey, ew, eh) in eyes])
+    img = Image(frame)
+    gray = copy(img.gray)
+    img.detectFaces()
+    face = img.best_face
+    if face:
+        frame = cv2.rectangle(frame, face.getTopLeft(), face.getBotRight(), (255,0,0),2)
+        roi_gray = gray[face.y:face.y+face.h,face.x:face.x+face.w]
+        roi_color = frame[face.y:face.y+face.h,face.x:face.x+face.w]
+        face.detectEyes()
+        if face.eyes:
+            (left_eye, right_eye) = face.selectEyes()
             cv2.rectangle(roi_color, left_eye.getTopLeft(), left_eye.getBotRight(), (0, 255, 255), 2)
             cv2.rectangle(roi_color, right_eye.getTopLeft(), right_eye.getBotRight(), (0, 0, 255), 2)
 
@@ -66,8 +64,6 @@ while(keepLoop):
             m_right = cv2.moments(roi_gray[right_eye.getTop():right_eye.getBot(), right_eye.getLeft():right_eye.getRight()])
 
             printCalibratorInfos(frame, calibrator, m_left, m_right)
-
-            pressed_key = cv2.waitKey(1)
 
             if pressed_key & 0xFF == ord('v'):
                 calibrator.addEntry(m_left, m_right);
@@ -87,10 +83,12 @@ while(keepLoop):
             if pressed_key & 0xFF == ord('z'):
                 calibrator.showXYData()
 
-            if pressed_key & 0xFF == ord('q'):
-                keepLoop = False
 
     cv2.imshow('frame',frame)
+    pressed_key = cv2.waitKey(1)
+    if pressed_key & 0xFF == ord('q'):
+        keepLoop = False
+
 
 
 # When everything done, release the capture
