@@ -80,10 +80,10 @@ class Calibrator(object):
             self.vectorized_moments_right[self.state] = self.vectorOfMoment(moment_right)
             self.state += 1;
 
-    def addXYData(self, moment_left, direction_num): ############################
-        self.x_values.append(self.vectorOfMoment(moment_left))
-        self.y_values.append(direction_num)
-        print(str(len(self.y_values)))
+    #def addXYData(self, moment_left, direction_num): ############################
+    #    self.x_values.append(self.vectorOfMoment(moment_left))
+    #    self.y_values.append(direction_num)
+    #    print(str(len(self.y_values)))
 
     #def showXYData(self): #############################
     #    x_data = stack(self.x_values)
