@@ -16,9 +16,6 @@ class Calibrator(object):
         self.state = 0;
         self.vectorized_moments_left = [None] * (Calibrator.nb_directions * Calibrator.nb_samples)
         self.vectorized_moments_right = [None] * (Calibrator.nb_directions * Calibrator.nb_samples)
-        #self.vectorized_double_moments = [None] * Calibrator.nb_directions; ##############
-        self.x_values = []
-        self.y_values = []
 
     def isWaitingForEntry(self):
         return self.state < Calibrator.nb_directions * Calibrator.nb_samples;
@@ -79,25 +76,6 @@ class Calibrator(object):
             self.vectorized_moments_left[self.state] = self.vectorOfMoment(moment_left)
             self.vectorized_moments_right[self.state] = self.vectorOfMoment(moment_right)
             self.state += 1;
-
-    #def addXYData(self, moment_left, direction_num): ############################
-    #    self.x_values.append(self.vectorOfMoment(moment_left))
-    #    self.y_values.append(direction_num)
-    #    print(str(len(self.y_values)))
-
-    #def showXYData(self): #############################
-    #    x_data = stack(self.x_values)
-    #    x_data = (x_data - mean(x_data, 0)) / std(x_data, 0)
-    #    y_data = stack(self.y_values)
-    #    for i in range(0, 7):
-    #        for j in range(i + 1, 7):
-    #            plt.subplot(6, 6, 1 + i + 6 * (j-1))
-    #            plt.scatter(x_data[argwhere(y_data==0),i], x_data[argwhere(y_data==0),j], c='r')
-    #            plt.scatter(x_data[argwhere(y_data==1),i], x_data[argwhere(y_data==1),j], c='b')
-    #            plt.scatter(x_data[argwhere(y_data==2),i], x_data[argwhere(y_data==2),j], c='g')
-    #            plt.scatter(x_data[argwhere(y_data==3),i], x_data[argwhere(y_data==3),j], c='y')
-    #            plt.scatter(x_data[argwhere(y_data==4),i], x_data[argwhere(y_data==4),j], c='k')
-    #    plt.show()
 
     def getScores(self, moment_left, moment_right):
         if(self.isWaitingForEntry()):
