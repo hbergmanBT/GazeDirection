@@ -1,20 +1,25 @@
 import os
 import cv2
 import numpy as np
+
 from face import Face
+from data import Data
+from classifier import Classifier, ClassifierType
 
 
-CLASSIFIERS_DIR = './classifiers/'
-FACE_CLASSIFIER_FILE = 'haarcascade_frontalface_default.xml'
-
-face_cascade = cv2.CascadeClassifier(os.path.join(CLASSIFIERS_DIR, FACE_CLASSIFIER_FILE))
+face_cascade = Classifier.get(ClassifierType.FACE)
 
 class Image(object):
     """docstring for Image."""
-    def __init__(self, frame):
+    def __init__(self, frame, canvas=None):
         self.frame = np.copy(frame)
         self.gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        self.canvas = canvas if canvas else np.copy(frame)
         self.faces = []
+        self.best_face = None
+
+    def show(self):
+        cv2.imshow('frame', self.canvas)
 
     @property
     def shape(self):
@@ -22,10 +27,9 @@ class Image(object):
 
     def detectFaces(self):
         faces = face_cascade.detectMultiScale(self.gray, 1.3, 5)
-        self.faces = [Face(x, y, w, h, self.frame[y:y+h, x:x+w]) for (x, y, w, h) in faces]
+        self.faces = [Face(x, y, w, h, self.frame, self.canvas) for (x, y, w, h) in faces]
 
-    @property
-    def best_face(self):
+        # Best face
         n_faces = len(self.faces)
         biggest_area, biggest_face = 0, None
         if n_faces > 0:
@@ -33,4 +37,37 @@ class Image(object):
                 if biggest_area < value.area:
                     biggest_face = value
                     biggest_area = value.area
-        return biggest_face
+        self.best_face = biggest_face
+
+        return self.faces
+
+    def getMeanFace(self, buffer):
+        # Mean position
+        buffer.addLast(self.best_face)
+        lastFaces = [item for item in buffer.lasts if item]
+        if lastFaces:
+            xm = int(np.mean([face.x for face in lastFaces]))
+            ym = int(np.mean([face.y for face in lastFaces]))
+            wm = int(np.mean([face.w for face in lastFaces]))
+            hm = int(np.mean([face.h for face in lastFaces]))
+            return Face(xm, ym, wm, hm, self.frame, self.canvas)
+        return self.best_face
+
+    def detectEyes(self, bufferFace=None, bufferLeftEye=None, bufferRightEye=None):
+        self.detectFaces()
+        face = self.getMeanFace(bufferFace) if bufferFace else self.best_face
+        left_eye, right_eye = None, None
+        if face:
+            face.detectEyes()
+            if face.eyes:
+                left_eye, right_eye = face.selectEyes()
+                if bufferLeftEye and bufferRightEye:
+                    left_eye, right_eye = face.getMeanEyes(bufferLeftEye, bufferRightEye)
+        return face, left_eye, right_eye
+
+    def getData(self):
+        return Data(self.frame, left_eye, right_eye)
+
+    # @property
+    # def best_face(self):
+    #     return biggest_face

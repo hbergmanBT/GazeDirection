@@ -1,86 +1,120 @@
 #!/usr/bin/env python3
 
+import matplotlib
+import matplotlib.pyplot as plt
+import numpy as np
 import cv2
 import os
-import matplotlib.pyplot as plt
-from numpy import *
-from calibrator import Calibrator
+
+from data_collector import DataCollector
 from image import Image
 from face import Face
 from eye import Eye
+from data import Dataset
+from classifier import Classifier
+from buffer import Buffer
 
-CLASSIFIERS_DIR = './classifiers/'
-FACE_CLASSIFIER_FILE = 'haarcascade_frontalface_default.xml'
-EYE_CLASSIFIER_FILE = 'haarcascade_eye.xml'
-RIGHT_EYE_CLASSIFIER_FILE = 'haarcascade_righteye_2splits.xml'
-LEFT_EYE_CLASSIFIER_FILE = 'haarcascade_lefteye_2splits.xml'
-
-face_cascade = cv2.CascadeClassifier(os.path.join(CLASSIFIERS_DIR, FACE_CLASSIFIER_FILE))
-eye_cascade = cv2.CascadeClassifier(os.path.join(CLASSIFIERS_DIR, EYE_CLASSIFIER_FILE))
-right_eye_cascade = cv2.CascadeClassifier(os.path.join(CLASSIFIERS_DIR, RIGHT_EYE_CLASSIFIER_FILE))
-left_eye_cascade = cv2.CascadeClassifier(os.path.join(CLASSIFIERS_DIR, LEFT_EYE_CLASSIFIER_FILE))
+matplotlib.use('TkAgg')
 
 
-def printCalibratorInfos(frame, calibrator, m_left, m_right):
-    frame_h, frame_w = frame.shape[0], frame.shape[1]
-    cv2.putText(frame, calibrator.getInstruction(), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-    #cv2.putText(frame, calibrator.getResult(m_left, m_right), (50, 550), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 255), 2)
-    pos = frame_h - 15
-    scores = calibrator.getScores(m_left, m_right)
-    score_total = float(sum([s for (_, s) in scores])) + 1
-    for (d, s) in scores:
-        cv2.putText(frame, d, (10, pos), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 2)
-        x_end = int(100 + 600. * s / score_total)
-        cv2.rectangle(frame, (100, pos), (x_end, pos), (0, 255, 255), 2)
-        pos -= 40
+class EyeDirection(object):
+    # FACE_CLASSIFIER_FILE = 'haarcascade_frontalface_default.xml'
+    # EYE_CLASSIFIER_FILE = 'haarcascade_eye.xml'
+    # RIGHT_EYE_CLASSIFIER_FILE = 'haarcascade_righteye_2splits.xml'
+    # LEFT_EYE_CLASSIFIER_FILE = 'haarcascade_lefteye_2splits.xml'
+    def __init__(self):
+        self.dataset = Dataset()
+        self.cap = None
+
+        self.showMoments = False
+        self.showEvaluation = False
+
+        rollingWindowLength = 3
+        self.bufferFace = Buffer(rollingWindowLength)
+        self.bufferLeftEye = Buffer(rollingWindowLength)
+        self.bufferRightEye = Buffer(rollingWindowLength)
+
+    def startCapture(self):
+        self.cap = cv2.VideoCapture(0)
+
+    def stopCapture(self):
+        # When everything done, release the capture
+        self.cap.release()
+        cv2.destroyAllWindows()
+
+    def run(self):
+        self.startCapture()
+        data_collector = DataCollector(self.dataset)
+
+        keepLoop = True
+        while keepLoop:
+            pressed_key = cv2.waitKey(1)
+
+            img = self.getCameraImage()
+            face, left_eye, right_eye = img.detectEyes(self.bufferFace, self.bufferLeftEye, self.bufferRightEye)
+            if face:
+                face.draw(img)
+            if left_eye:
+                left_eye.draw(face)
+            if right_eye:
+                right_eye.draw(face)
+
+            # Controls
+            if pressed_key & 0xFF == ord('q'):
+                keepLoop = False
+            if pressed_key & 0xFF == ord('s'):
+                self.dataset.save()
+            if pressed_key & 0xFF == ord('l'):
+                self.dataset.load()
+            if pressed_key & 0xFF == ord('m'):
+                self.showMoments = not self.showMoments
+            if pressed_key & 0xFF == ord('e'):
+                self.showEvaluation = not self.showEvaluation
+
+            data_collector.step(img.canvas, pressed_key, left_eye, right_eye)
+
+            txt = 'Dataset: {} (s)ave - (l)oad'.format(len(self.dataset))
+            cv2.putText(img.canvas, txt, (20, img.canvas.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (32, 32, 32), 2)
+
+            if left_eye and right_eye:
+                direction = self.dataset.estimateDirection(left_eye.computeMomentVectors(), right_eye.computeMomentVectors())
+                txt = 'Estimated direction: {}'.format(direction.name)
+                cv2.putText(img.canvas, txt, (20, img.canvas.shape[0] - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (32, 32, 32), 2)
+
+            img.show()
+
+            if self.showEvaluation:
+                fig = self.dataset.showValidationScoreEvolution()
+                plt.show()
+                self.showEvaluation = False
+
+            if self.showMoments:
+                fig = self.dataset.drawVectorizedMoments()
+                plt.show()
+                # cv2.imshow('moments', self.fig2cv(fig))
+                # plt.close(fig)
+                self.showMoments = False
+
+        self.stopCapture()
+
+    def fig2cv(self, fig):
+        fig.canvas.draw()
+        img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+        img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+
+        # img is rgb, convert to opencv's default bgr
+        img = cv2.cvtColor(img,cv2.COLOR_RGB2BGR)
+        return img
+
+    def getCameraImage(self):
+        # Capture frame-by-frame
+        ret, frame = self.cap.read()
+        frame = cv2.resize(frame, (640,480))
+        frame = cv2.flip(frame, 1)
+
+        return Image(frame)
 
 
-
-cap = cv2.VideoCapture(0)
-calibrator = Calibrator()
-
-keepLoop = True;
-while(keepLoop):
-    pressed_key = cv2.waitKey(1)
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-    frame = cv2.resize(frame, (640,480))
-    frame = cv2.flip(frame, 1)
-
-    img = Image(frame)
-    gray = copy(img.gray)
-    img.detectFaces()
-    face = img.best_face
-    if face:
-        frame = cv2.rectangle(frame, face.getTopLeft(), face.getBotRight(), (255,0,0),2)
-        roi_gray = gray[face.y:face.y+face.h,face.x:face.x+face.w]
-        roi_color = frame[face.y:face.y+face.h,face.x:face.x+face.w]
-        face.detectEyes()
-        if face.eyes:
-            (left_eye, right_eye) = face.selectEyes()
-            cv2.rectangle(roi_color, left_eye.getTopLeft(), left_eye.getBotRight(), (0, 255, 255), 2)
-            cv2.rectangle(roi_color, right_eye.getTopLeft(), right_eye.getBotRight(), (0, 0, 255), 2)
-
-            m_left = cv2.moments(roi_gray[left_eye.getTop():left_eye.getBot(), left_eye.getLeft():left_eye.getRight()])
-            m_right = cv2.moments(roi_gray[right_eye.getTop():right_eye.getBot(), right_eye.getLeft():right_eye.getRight()])
-
-            printCalibratorInfos(frame, calibrator, m_left, m_right)
-
-            if pressed_key & 0xFF == ord('v'):
-                calibrator.addEntry(m_left, m_right);
-            if pressed_key & 0xFF == ord('r'):
-                calibrator.reset();
-
-            if pressed_key & 0xFF == ord('z'):
-                calibrator.showVectorizedMoments()
-
-
-    cv2.imshow('frame',frame)
-    if pressed_key & 0xFF == ord('q'):
-        keepLoop = False
-
-
-
-# When everything done, release the capture
-cap.release()
-cv2.destroyAllWindows()
+if __name__ == '__main__':
+    ed = EyeDirection()
+    ed.run()
