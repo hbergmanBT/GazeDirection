@@ -74,12 +74,14 @@ class EyeDirection(object):
             data_collector.step(img.canvas, pressed_key, left_eye, right_eye)
 
             txt = 'Dataset: {} (s)ave - (l)oad'.format(len(self.dataset))
-            cv2.putText(img.canvas, txt, (20, img.canvas.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (32, 32, 32), 2)
+            cv2.putText(img.canvas, txt, (21, img.canvas.shape[0] - 29), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (32, 32, 32), 2)
+            cv2.putText(img.canvas, txt, (20, img.canvas.shape[0] - 30), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 126, 255), 2)
 
             if left_eye and right_eye:
                 direction = self.dataset.estimateDirection(left_eye.computeMomentVectors(), right_eye.computeMomentVectors())
                 txt = 'Estimated direction: {}'.format(direction.name)
-                cv2.putText(img.canvas, txt, (20, img.canvas.shape[0] - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (32, 32, 32), 2)
+                cv2.putText(img.canvas, txt, (21, img.canvas.shape[0] - 49), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (32, 32, 32), 2)
+                cv2.putText(img.canvas, txt, (20, img.canvas.shape[0] - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 126, 255), 2)
 
             img.show()
 

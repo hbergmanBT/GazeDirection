@@ -52,6 +52,7 @@ class Dataset(object):
     PERCENT_TRAINING_SET = 0.3
 
     def __init__(self):
+        self.dataset_file = "dataset"
         self.clear()
 
     def append(self, data):
@@ -71,11 +72,11 @@ class Dataset(object):
         return len(self.data)
 
     def save(self):
-        pickle.dump(self.data, open('dataset', 'wb'))
+        pickle.dump(self.data, open(self.dataset_file, 'wb'))
 
     def load(self):
         try:
-            self.data = pickle.load(open('dataset', 'rb'))
+            self.data = pickle.load(open(self.dataset_file, 'rb'))
         except Exception as e:
             print(e)
 
