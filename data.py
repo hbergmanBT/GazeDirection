@@ -94,9 +94,11 @@ class Dataset(object):
     Attributes:
         NB_NEIGHBOURS (int): Number of neighbours considered in the nearest neighbour selection
         PERCENT_TRAINING_SET (float): Part of the dataset that should be used as a training set (and the rest should go to the validation set)
+        NUMBER_MEAN_SCORE (int): number of cross validation test done
     """
     NB_NEIGHBOURS = 3
     PERCENT_TRAINING_SET = 0.3
+    NUMBER_MEAN_SCORE = 20
 
     def __init__(self):
         self.dataset_file = "dataset"
@@ -238,14 +240,17 @@ class Dataset(object):
         Returns:
             float: Score evaluation (success rate)
         """
-        idsTraining, idsValidation = self.getCrossValidationIds(maxLimit)
-        scores = []
-        for left_moments, right_moments, label in zip(self.leftMoments(idsValidation),
-                                                      self.rightMoments(idsValidation),
-                                                      self.labels(idsValidation)):
-            estimation = self.estimateDirection(left_moments, right_moments, idsTraining=idsTraining)
-            scores.append(float(label == estimation.value))
-        score = np.mean(scores)
+        globalScores = []
+        for i in range(self.NUMBER_MEAN_SCORE):
+            idsTraining, idsValidation = self.getCrossValidationIds(maxLimit)
+            scores = []
+            for left_moments, right_moments, label in zip(self.leftMoments(idsValidation),
+                                                          self.rightMoments(idsValidation),
+                                                          self.labels(idsValidation)):
+                estimation = self.estimateDirection(left_moments, right_moments, idsTraining=idsTraining)
+                scores.append(float(label == estimation.value))
+            globalScores.append(np.mean(scores))
+        score = np.mean(globalScores)
         return score
 
     def getValidationScoreEvolution(self, step=1):
@@ -318,5 +323,9 @@ class Dataset(object):
         """
         scores = np.array(self.getValidationScoreEvolution())
         fig = plt.figure()
-        plt.plot(scores[:, 0], scores[:, 1])
+        if len(scores) > 0:
+            plt.plot(scores[:, 0], scores[:, 1])
+        plt.xlabel('Number of data in the dataset')
+        plt.ylabel('Estimation success rate')
+        plt.title('Cross validation evaluation')
         return fig
