@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 
+"""
+This is the main script of this program.
+It should be run with python3.6 or higher.
+"""
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -17,11 +22,11 @@ from buffer import Buffer
 matplotlib.use('TkAgg')
 
 
-class EyeDirection(object):
-    # FACE_CLASSIFIER_FILE = 'haarcascade_frontalface_default.xml'
-    # EYE_CLASSIFIER_FILE = 'haarcascade_eye.xml'
-    # RIGHT_EYE_CLASSIFIER_FILE = 'haarcascade_righteye_2splits.xml'
-    # LEFT_EYE_CLASSIFIER_FILE = 'haarcascade_lefteye_2splits.xml'
+class GazeDirection(object):
+    """Main class, retriving video frames from the webcam, acquiring data and estimating the look direction
+    """
+    ROLLING_WINDOW_LENGTH = 3
+
     def __init__(self):
         self.dataset = Dataset()
         self.cap = None
@@ -29,20 +34,25 @@ class EyeDirection(object):
         self.showMoments = False
         self.showEvaluation = False
 
-        rollingWindowLength = 3
-        self.bufferFace = Buffer(rollingWindowLength)
-        self.bufferLeftEye = Buffer(rollingWindowLength)
-        self.bufferRightEye = Buffer(rollingWindowLength)
+        self.bufferFace = Buffer(self.ROLLING_WINDOW_LENGTH)
+        self.bufferLeftEye = Buffer(self.ROLLING_WINDOW_LENGTH)
+        self.bufferRightEye = Buffer(self.ROLLING_WINDOW_LENGTH)
 
     def startCapture(self):
+        """Start the webcam recording
+        """
         self.cap = cv2.VideoCapture(0)
 
     def stopCapture(self):
+        """Stop the camera recording
+        """
         # When everything done, release the capture
         self.cap.release()
         cv2.destroyAllWindows()
 
     def run(self):
+        """Main loop
+        """
         self.startCapture()
         data_collector = DataCollector(self.dataset)
 
@@ -100,6 +110,15 @@ class EyeDirection(object):
         self.stopCapture()
 
     def fig2cv(self, fig):
+        """Convert a matplotlib figure to a cv2 image that can be displayed
+
+        Args:
+            fig (plt.Figure): Original matplotlib figure
+
+        Returns:
+            cv2.Image: Converted cv2 image
+
+        """
         fig.canvas.draw()
         img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
         img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
@@ -109,6 +128,11 @@ class EyeDirection(object):
         return img
 
     def getCameraImage(self):
+        """Retrieves the current frame from the webcam
+
+        Returns:
+            Image: Image frame captured
+        """
         # Capture frame-by-frame
         ret, frame = self.cap.read()
         frame = cv2.resize(frame, (640,480))
@@ -118,5 +142,5 @@ class EyeDirection(object):
 
 
 if __name__ == '__main__':
-    ed = EyeDirection()
+    ed = GazeDirection()
     ed.run()

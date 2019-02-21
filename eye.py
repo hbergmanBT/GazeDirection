@@ -4,12 +4,38 @@ import numpy as np
 
 
 class EyeType(enum.Enum):
+    """Enum class describing the eye type: either left or right or undefined yet."""
     UNDEFINED = 'undefined'
     LEFT = 'left'
     RIGHT = 'right'
 
 
 class Eye(object):
+    """Short summary.
+
+    Args:
+        x (int): x coordinate of the eye (top-left corner) in the face frame.
+        y (int): y coordinate of the eye (top-left corner) in the face frame.
+        w (int): width of the eye in the face frame.
+        h (int): height of the eye in the face frame.
+        frame (np.array): Original face frame onto which the eye has been identified
+        canvas (np.array): Face frame we can draw on
+        type_ (EyeType): Either left or right or undefined yet
+
+    Attributes:
+        coords (int, int, int, int): (x, y, w, h)
+        centroid (float, float): Center of the eye
+        gray (np.array): Gray-scale version of the eye frame
+        moments (np.array): Moments of our region of interest
+        momentVectors (np.array): Vector moments of our region of interest
+        x
+        y
+        w
+        h
+        frame
+        canvas
+        COLORS (dict): Color associated with each EyeType
+    """
     COLORS = {
                 EyeType.UNDEFINED: (255, 255, 255),
                 EyeType.LEFT: (0, 255, 255),
@@ -34,6 +60,14 @@ class Eye(object):
         self.momentVectors = None
 
     def distanceToPoint(self, point):
+        """Computes the distance between the point and the eye centroid
+
+        Args:
+            point (np.array 2): 2d coordinates of the given point
+
+        Returns:
+            float: Distance to the eye centroid
+        """
         return np.sum(np.power(point - np.array(list(self.centroid)), 2))
 
     def getLeft(self):
@@ -55,18 +89,29 @@ class Eye(object):
         return (self.x + self.w, self.y + self.h)
 
     def draw(self, face):
+        """Draw a rectangle around the eye and indicates its side.
+
+        Args:
+            face (Face): Face on which canvas the eye info will be drawn
+        """
         cv2.rectangle(face.canvas, self.getTopLeft(), self.getBotRight(), self.COLORS[self.type], 2)
         cv2.putText(face.canvas, self.type.value, (self.getLeft(), self.getBot() + 18), cv2.FONT_HERSHEY_SIMPLEX,
                     0.5, self.COLORS[self.type], 1)
 
     def computeMoments(self):
+        """Computes the moments of this eye.
+
+        Returns:
+            np.array: Moments
+        """
         self.moments = cv2.moments(self.gray)
         return self.moments
 
     def computeMomentVectors(self):
-        """
-        Evaluates the 7 moment invariants defined by Hu
-        Returns them ordered in an array
+        """Evaluates the 7 moment invariants defined by Hu
+
+        Returns:
+            np.array: Ordered vector moments
         """
         self.computeMoments()
         mu = {}

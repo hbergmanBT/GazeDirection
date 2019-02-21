@@ -6,16 +6,35 @@ from data import Data, Direction
 
 
 class DataCollector(object):
+    """A GUI designed to help the user gathering new data and adding it to the dataset
+
+    Args:
+        dataset (Dataset): The working dataset in which data should be added
+
+    Attributes:
+        collecting (bool): Defines if the system is currently in acquisition mod & is showing the GUI to collect new data
+        askedDirection (Direction): Current direction in which the user should look for the next data collection
+        dataset
+    """
     def __init__(self, dataset):
-        self.collecting = False  # Is currently showing the GUI to collect new data
+        self.collecting = False
         self.dataset = dataset
         self.reset()
 
     def reset(self):
-        self.askedDirection = Direction.CENTER  # Current direction in which the user should look for the next data collection
+        """Empties the dataset and restart the acquisition process"""
+        self.askedDirection = Direction.CENTER
         self.dataset.clear()
 
     def step(self, frame, pressed_key, left_eye, right_eye):
+        """Manages the acquisition process and print guidance text on the frame.
+
+        Args:
+            frame (np.array): Original video frame
+            left_eye (Eye): Left eye detected
+            right_eye (Eye): Right eye detected
+            direction (Direction): Direction label
+        """
         if self.collecting:
             instruction = 'Look {} and press (v) - (u)ndo - (r)eset' \
                           .format(Direction.getString(self.askedDirection))
@@ -40,4 +59,12 @@ class DataCollector(object):
                 self.reset()
 
     def addEntry(self, frame, left_eye, right_eye, direction):
+        """Adds a new entry into the dataset
+
+        Args:
+            frame (np.array): Original video frame
+            left_eye (Eye): Left eye detected
+            right_eye (Eye): Right eye detected
+            direction (Direction): Direction label
+        """
         self.dataset.append(Data(frame, left_eye, right_eye, direction))

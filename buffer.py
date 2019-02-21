@@ -9,6 +9,10 @@ class Buffer(object):
         self.lasts = []
 
     def addLast(self, last):
+        '''
+        Append and item to the queue and delete the first element of it if needed
+        :param last: item to add
+        '''
         if self.rollingWindowLength == 0:
             return
         self.lasts.append(last)

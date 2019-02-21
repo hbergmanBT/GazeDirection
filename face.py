@@ -11,6 +11,31 @@ left_eye_cascade = Classifier.get(ClassifierType.LEFT_EYE)
 
 
 class Face(object):
+    """Short summary.
+
+    Args:
+        x (int): x coordinate of the face (top-left corner) in the image frame.
+        y (int): y coordinate of the face (top-left corner) in the image frame.
+        w (int): width of the face in the image frame.
+        h (int): height of the face in the image frame.
+        frame (np.array): Original iamge frame onto which the face has been identified
+        canvas (np.array): Image frame we can draw on
+
+    Attributes:
+        centroid (float, float): Center of the face
+        area (int): Area of the bounding box of our face
+        gray (np.array): Gray-scale version of the face frame
+        eyes ([Eye, ...]): List of the eyes detected
+        best_eye_left (Eye): Best selected eye candidate for the left side
+        best_eye_right (Eye): Best selected eye candidate for the right side
+        x
+        y
+        w
+        h
+        frame
+        canvas
+
+    """
     def __init__(self, x, y, w, h, frame, canvas):
         self.x = x
         self.y = y
@@ -46,16 +71,26 @@ class Face(object):
         return (self.x + self.w, self.y + self.h)
 
     def draw(self, image):
+        """Draw a rectangle around the face.
+
+        Args:
+            image (Image): Image on which canvas the face info will be drawn
+        """
         cv2.rectangle(image.canvas, self.getTopLeft(), self.getBotRight(), (255,0,0), 2)
 
     def detectEyes(self):
+        """Uses classifiers to detect eyes in the face
+        """
         eyes = eye_cascade.detectMultiScale(self.gray, 1.3, 5)
         self.eyes = [Eye(x, y, w, h, self.frame, self.canvas) for (x, y, w, h) in eyes]
 
     def selectEyes(self):
         """
         Selects left and right eyes from a list of potential eyes
-        according to their relative position to the face
+        according to their relative position on the face
+
+        Returns:
+            Eye, Eye: left side best candidate, right side best candidate
         """
         left_center = np.array([1/3*self.w, 1/3*self.h]) # a priori on the relative position of the left eye on the face
         right_center = np.array([2/3*self.w, 1/3*self.h]) # a priori on the relative position of the right eye on the face
@@ -80,6 +115,15 @@ class Face(object):
         return self.best_eye_left, self.best_eye_right
 
     def getMeanEyes(self, bufferLeftEye, bufferRightEye):
+        """Smooth the eye detection by using a rolling mean window over the last detected best eyes.
+
+        Args:
+            bufferLeftEye (Buffer): Buffer for the last left best eyes chosen
+            bufferRightEye (Buffer): Buffer for the last right best eyes chosen
+
+        Returns:
+            [Eye, Eye]: Mean best eyes
+        """
         # Mean position
         eyes = [self.best_eye_left, self.best_eye_right]
 
