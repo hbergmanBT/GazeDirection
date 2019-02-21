@@ -6,10 +6,24 @@ from face import Face
 from data import Data
 from classifier import Classifier, ClassifierType
 
-
 face_cascade = Classifier.get(ClassifierType.FACE)
 
+
 class Image(object):
+    """A single frame
+
+    Args:
+        frame (np.array): Original video frame
+        canvas (np.array): Image frame we can draw on
+
+    Attributes:
+        gray (np.array): Gray-scale version of the face frame
+        faces ([Face, ...]): List of faces identified in the image
+        best_face (Face): Best face found
+        frame
+        canvas
+
+    """
     """docstring for Image."""
     def __init__(self, frame, canvas=None):
         self.frame = np.copy(frame)
@@ -19,6 +33,8 @@ class Image(object):
         self.best_face = None
 
     def show(self):
+        """Displays the image canvas in a window
+        """
         cv2.imshow('frame', self.canvas)
 
     @property
@@ -26,6 +42,12 @@ class Image(object):
         return self.frame.shape
 
     def detectFaces(self):
+        """Uses a classifier to identify faces in the image
+        Also select the best face canditate (currently the biggest one)
+
+        Returns:
+            [Face, ...]: List of faces identified in the image
+        """
         faces = face_cascade.detectMultiScale(self.gray, 1.3, 5)
         self.faces = [Face(x, y, w, h, self.frame, self.canvas) for (x, y, w, h) in faces]
 
@@ -42,6 +64,14 @@ class Image(object):
         return self.faces
 
     def getMeanFace(self, buffer):
+        """Smooth the face detection by using a rolling mean window over the last detected best faces.
+
+        Args:
+            buffer (Buffer): Buffer for the last detected best faces
+
+        Returns:
+            Face: Mean best face
+        """
         # Mean position
         buffer.addLast(self.best_face)
         lastFaces = [item for item in buffer.lasts if item]
@@ -54,6 +84,16 @@ class Image(object):
         return self.best_face
 
     def detectEyes(self, bufferFace=None, bufferLeftEye=None, bufferRightEye=None):
+        """Select the best face candidate in the image and then the best eyes detected within this face
+
+        Args:
+            bufferFace (Buffer): Buffer for the last detected best faces
+            bufferLeftEye (Buffer): Buffer for the last left best eyes chosen
+            bufferRightEye (Buffer): Buffer for the last right best eyes chosen
+
+        Returns:
+            Face, Eye, Eye: best face, best left eye, best right eye
+        """
         self.detectFaces()
         face = self.getMeanFace(bufferFace) if bufferFace else self.best_face
         left_eye, right_eye = None, None
