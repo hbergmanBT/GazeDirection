@@ -148,7 +148,7 @@ class Dataset(object):
     def drawVectorizedMoments(self):
         x_data_left = np.copy(self.leftMoments())
         x_data_right = np.copy(self.rightMoments())
-        y_data = np.copy(self.labels)
+        y_data = np.copy(self.labels())
         colors = {
             Direction.CENTER: 'k',
             Direction.UP: 'r',
