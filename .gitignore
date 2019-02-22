@@ -1,2 +1,5 @@
 __pycache__
 *.png
+/dataset
+/dataset10
+/dataset_01
